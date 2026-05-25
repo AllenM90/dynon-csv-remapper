@@ -57,10 +57,20 @@ func loadConfig(filename string) Config {
 }
 
 func readCSV(filename string) [][]string {
-	f, _ := os.Open(filename)
+	f, err := os.Open(filename)
+	if err != nil {
+		walk.MsgBox(nil, "File Error", err.Error(), walk.MsgBoxIconWarning)
+		os.Exit(1)
+	}
 	defer f.Close()
+
 	r := csv.NewReader(f)
-	records, _ := r.ReadAll()
+	r.FieldsPerRecord = -1   // allow varying number of fields per row
+	records, err := r.ReadAll()
+	if err != nil {
+		walk.MsgBox(nil, "CSV Parse Error", err.Error(), walk.MsgBoxIconWarning)
+		os.Exit(1)
+	}
 	return records
 }
 
