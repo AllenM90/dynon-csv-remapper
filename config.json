@@ -1,4 +1,19 @@
 {
-  "Dynon Old Header 1": "Savvy New Header 1",
-  "Dynon Old Header 2": "Savvy New Header 2"
+  "Fuel Flow 1 (gal/hr)": "L-FF",
+  "Fuel Flow 1 (gal/hr) EMS 2": "R-FF",
+  "EGT 1 (deg C)": "L-EGT1",
+  "CHT 1 (deg C":"L-CHT1",
+  "EGT 1 (deg C) EMS 2": "R-EGT1",
+  "CHT 1 (deg C) EMS 2": "R-CHT1",
+  "EGT 2 (deg C)": "L-EGT2",
+  "CHT 2 (deg C)": "L-CHT2",
+  "EGT 2 (deg C) EMS 2": "R-EGT2",
+  "CHT 2 (deg C) EMS 2": "R-CHT2",
+  "EGT 3 (deg C)": "L-EGT3",
+  "CHT 3 (deg C)": "L-CHT3",
+  "EGT 3 (deg C) EMS 2": "R-EGT3",
+  "CHT 3 (deg C) EMS 2": "R-CHT3",
+  "EGT 4 (deg C)": "L-EGT4",
+  "CHT 4 (deg C)": "L-CHT4"
+
 }
