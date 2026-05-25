@@ -29,9 +29,16 @@ func main() {
 		return
 	}
 
+	records := readCSV(inputFile)
+	if len(records) == 0 {
+		walk.MsgBox(nil, "Empty File", 
+			"DynonRaw.csv appears to be empty.", 
+			walk.MsgBoxIconWarning)
+		return
+	}
+
 	outputFile := "DynonSavvy" + time.Now().Format("060102") + ".csv"
 
-	records := readCSV(inputFile)
 	for i, header := range records[0] {
 		if newHeader, ok := config[header]; ok {
 			records[0][i] = newHeader
