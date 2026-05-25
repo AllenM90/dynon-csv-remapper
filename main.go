@@ -1,61 +1,61 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/widget"
+	"github.com/lxn/walk"
+	. "github.com/lxn/walk/declarative"
 )
 
 type Config map[string]string
 
 func main() {
-	a := app.New()
-	w := a.NewWindow("Dynon CSV Remapper")
-
 	var inputPath, outputPath string
 	config := loadConfig()
 
-	inputBtn := widget.NewButton("Select Input Dynon CSV", func() {
-		dialog.ShowFileOpen(func(f fyne.URIReadCloser, err error) {
-			if err == nil && f != nil {
-				inputPath = f.URI().Path()
-				f.Close()
-			}
-		}, w)
-	})
-
-	outputBtn := widget.NewButton("Select Output Location", func() {
-		dialog.ShowFileSave(func(f fyne.URIWriteCloser, err error) {
-			if err == nil && f != nil {
-				outputPath = f.URI().Path()
-				f.Close()
-			}
-		}, w)
-	})
-
-	processBtn := widget.NewButton("Process", func() {
-		if inputPath == "" || outputPath == "" {
-			dialog.ShowInformation("Missing", "Select both input and output", w)
-			return
-		}
-		// TODO: read CSV, apply config map, write output
-		fmt.Println("Config loaded:", config)
-		dialog.ShowInformation("Done", "Processing complete (stub)", w)
-	})
-
-	w.SetContent(container.NewVBox(
-		widget.NewLabel("Dynon EMS → Savvy Aviation CSV Remapper"),
-		inputBtn,
-		outputBtn,
-		processBtn,
-	))
-	w.ShowAndRun()
+	MainWindow{
+		Title:   "Dynon CSV Remapper",
+		Size:    Size{300, 200},
+		Layout:  VBox{},
+		Children: []Widget{
+			Label{
+				Text: "Dynon EMS → Savvy Aviation CSV Remapper",
+			},
+			PushButton{
+				Text: "Select Input Dynon CSV",
+				OnClicked: func() {
+					dlg := new(walk.FileDialog)
+					dlg.Title = "Select Input CSV"
+					if ok, _ := dlg.ShowOpen(nil); ok {
+						inputPath = dlg.FilePath
+					}
+				},
+			},
+			PushButton{
+				Text: "Select Output Location",
+				OnClicked: func() {
+					dlg := new(walk.FileDialog
+)
+					dlg.Title = "Select Output CSV"
+					if ok, _ := dlg.ShowSave(nil); ok {
+						outputPath = dlg.FilePath
+					}
+				},
+			},
+			PushButton{
+				Text: "Process",
+				OnClicked: func() {
+					if inputPath == "" || outputPath == "" {
+						walk.MsgBox(nil, "Missing", "Select both input and output", walk.MsgBoxIconWarning)
+						return
+					}
+					fmt.Println("Config loaded:", config)
+					walk.MsgBox(nil, "Done", "Processing complete (stub)", walk.MsgBoxIconInformation)
+				},
+			},
+		},
+	}.Run()
 }
 
 func loadConfig() Config {
