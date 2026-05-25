@@ -11,13 +11,15 @@ import (
 type Config map[string]string
 
 func main() {
+	var mw *walk.MainWindow
 	var inputPath, outputPath string
 	config := loadConfig()
 
 	MainWindow{
-		Title:   "Dynon CSV Remapper",
-		Size:    Size{300, 200},
-		Layout:  VBox{},
+		AssignTo: &mw,
+		Title:    "Dynon CSV Remapper",
+		Size:     Size{300, 200},
+		Layout:   VBox{},
 		Children: []Widget{
 			Label{
 				Text: "Dynon EMS → Savvy Aviation CSV Remapper",
@@ -27,7 +29,7 @@ func main() {
 				OnClicked: func() {
 					dlg := new(walk.FileDialog)
 					dlg.Title = "Select Input CSV"
-					if ok, _ := dlg.ShowOpen(nil); ok {
+					if ok, _ := dlg.ShowOpen(mw); ok {
 						inputPath = dlg.FilePath
 					}
 				},
@@ -35,10 +37,9 @@ func main() {
 			PushButton{
 				Text: "Select Output Location",
 				OnClicked: func() {
-					dlg := new(walk.FileDialog
-)
+					dlg := new(walk.FileDialog)
 					dlg.Title = "Select Output CSV"
-					if ok, _ := dlg.ShowSave(nil); ok {
+					if ok, _ := dlg.ShowSave(mw); ok {
 						outputPath = dlg.FilePath
 					}
 				},
@@ -47,15 +48,17 @@ func main() {
 				Text: "Process",
 				OnClicked: func() {
 					if inputPath == "" || outputPath == "" {
-						walk.MsgBox(nil, "Missing", "Select both input and output", walk.MsgBoxIconWarning)
+						walk.MsgBox(mw, "Missing", "Select both input and output", walk.MsgBoxIconWarning)
 						return
 					}
 					fmt.Println("Config loaded:", config)
-					walk.MsgBox(nil, "Done", "Processing complete (stub)", walk.MsgBoxIconInformation)
+					walk.MsgBox(mw, "Done", "Processing complete (stub)", walk.MsgBoxIconInformation)
 				},
 			},
 		},
-	}.Run()
+	}.Create()
+
+	mw.Run()
 }
 
 func loadConfig() Config {
