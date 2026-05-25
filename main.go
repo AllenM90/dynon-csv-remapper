@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -15,7 +16,7 @@ func main() {
 	var inputPath, outputPath string
 	config := loadConfig()
 
-	MainWindow{
+	err := MainWindow{
 		AssignTo: &mw,
 		Title:    "Dynon CSV Remapper",
 		Size:     Size{300, 200},
@@ -57,6 +58,15 @@ func main() {
 			},
 		},
 	}.Create()
+
+	if err != nil {
+		fmt.Println("Create error:", err)
+		return
+	}
+	if mw == nil {
+		fmt.Println("mw is nil")
+		return
+	}
 
 	mw.Run()
 }
