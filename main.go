@@ -1,79 +1,75 @@
 package main
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"os"
-
-	"github.com/lxn/walk"
-	. "github.com/lxn/walk/declarative"
+	"time"
 )
 
 type Config map[string]string
 
 func main() {
-	var mw *walk.MainWindow
-	var inputPath, outputPath string
-	config := loadConfig()
+	config := loadConfig("config.json")
 
-	err := MainWindow{
-		AssignTo: &mw,
-		Title:    "Dynon CSV Remapper",
-		Size:     Size{300, 200},
-		Layout:   VBox{},
-		Children: []Widget{
-			Label{
-				Text: "Dynon EMS → Savvy Aviation CSV Remapper",
-			},
-			PushButton{
-				Text: "Select Input Dynon CSV",
-				OnClicked: func() {
-					dlg := new(walk.FileDialog)
-					dlg.Title = "Select Input CSV"
-					if ok, _ := dlg.ShowOpen(mw); ok {
-						inputPath = dlg.FilePath
-					}
-				},
-			},
-			PushButton{
-				Text: "Select Output Location",
-				OnClicked: func() {
-					dlg := new(walk.FileDialog)
-					dlg.Title = "Select Output CSV"
-					if ok, _ := dlg.ShowSave(mw); ok {
-						outputPath = dlg.FilePath
-					}
-				},
-			},
-			PushButton{
-				Text: "Process",
-				OnClicked: func() {
-					if inputPath == "" || outputPath == "" {
-						walk.MsgBox(mw, "Missing", "Select both input and output", walk.MsgBoxIconWarning)
-						return
-					}
-					fmt.Println("Config loaded:", config)
-					walk.MsgBox(mw, "Done", "Processing complete (stub)", walk.MsgBoxIconInformation)
-				},
-			},
-		},
-	}.Create()
+	inputFile := "DynonRaw.csv"
+	outputFile := "DynonSavvy" + time.Now().Format("060102") + ".csv"
 
-	if err != nil {
-		fmt.Println("Create error:", err)
-		return
-	}
-	if mw == nil {
-		fmt.Println("mw is nil")
+	records := readCSV(inputFile)
+	if len(records) == 0 {
+		fmt.Println("No data in", inputFile)
 		return
 	}
 
-	mw.Run()
+	// Replace header row
+	for i, header := range records[0] {
+		if newHeader, ok := config[header]; ok {
+			records[0][i] = newHeader
+		}
+	}
+
+	writeCSV(outputFile, records)
+	fmt.Println("Created:", outputFile)
 }
 
-func loadConfig() Config {
-	data, _ := os.ReadFile("config.json")
+func loadConfig(filename string) Config {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		fmt.Println("Config error:", err)
+		os.Exit(1)
+	}
 	var c Config
 	json.Unmarshal(data, &c)
 	return c
+}
+
+func readCSV(filename string) [][]string {
+	f, err := os.Open(filename)
+	if err != nil {
+		fmt.Println("Input error:", err)
+		os.Exit(1)
+	}
+	defer f.Close()
+
+	r := csv.NewReader(f)
+	records, err := r.ReadAll()
+	if err != nil {
+		fmt.Println("CSV read error:", err)
+		os.Exit(1)
+	}
+	return records
+}
+
+func writeCSV(filename string, records [][]string) {
+	f, err := os.Create(filename)
+	if err != nil {
+		fmt.Println("Output error:", err)
+		os.Exit(1)
+	}
+	defer f.Close()
+
+	w := csv.NewWriter(f)
+	w.WriteAll(records)
+	w.Flush()
 }
