@@ -5,36 +5,76 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
-
-	"github.com/lxn/walk"
 )
 
 type Config map[string]string
 
 func main() {
-	if _, err := os.Stat("config.json"); os.IsNotExist(err) {
-		walk.MsgBox(nil, "Missing File", 
-			"config.json is missing. Place it in the same folder as this exe.", 
-			walk.MsgBoxIconWarning)
+	// Always pause at the end so the window stays open when double-clicked
+	defer pause()
+
+	args := os.Args[1:]
+
+	var inputFile, outputFile, configFile string
+	renameInput := false // only true when no filenames were explicitly provided
+
+	switch len(args) {
+	case 0:
+		inputFile = "DynonRaw.csv"
+		renameInput = true
+	case 1:
+		inputFile = args[0]
+	case 2:
+		inputFile = args[0]
+		outputFile = args[1]
+	case 3:
+		inputFile = args[0]
+		outputFile = args[1]
+		configFile = args[2]
+	default:
+		fmt.Fprintln(os.Stderr, "Usage: dynon-csv-remapper [input.csv] [output.csv] [config.json]")
 		return
 	}
-	config := loadConfig("config.json")
 
-	inputFile := "DynonRaw.csv"
+	if configFile == "" {
+		configFile = "config.json"
+	}
+
+	// Load config
+	if _, err := os.Stat(configFile); os.IsNotExist(err) {
+		fmt.Fprintf(os.Stderr, "Error: config file not found: %s\n", configFile)
+		return
+	}
+	config := loadConfig(configFile)
+
+	// Check input file
 	if _, err := os.Stat(inputFile); os.IsNotExist(err) {
-		walk.MsgBox(nil, "Missing File", 
-			"Place this exe in the directory with the DynonRaw.csv file before running.", 
-			walk.MsgBoxIconWarning)
+		fmt.Fprintf(os.Stderr, "Error: input file not found: %s\n", inputFile)
 		return
 	}
 
-	records := readCSV(inputFile)
-	if len(records) == 0 {
-		walk.MsgBox(nil, "Empty File", 
-			"DynonRaw.csv appears to be empty.", 
-			walk.MsgBoxIconWarning)
+	records, err := readCSV(inputFile)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		return
+	}
+	if len(records) == 0 {
+		fmt.Fprintln(os.Stderr, "Error: input file appears to be empty")
+		return
+	}
+
+	// Soft header validation: warn if config references columns not present in the CSV.
+	// Only columns present in both will be remapped (allows one large config for multiple data sources).
+	if missing := findMissingHeaders(config, records[0]); len(missing) > 0 {
+		msg := "The following columns from the config were not found in the CSV:\n"
+		for _, m := range missing {
+			msg += "  - " + m + "\n"
+		}
+		if !promptContinue(msg) {
+			return
+		}
 	}
 
 	startDate, endDate := extractDateRange(records)
@@ -43,20 +83,49 @@ func main() {
 		endDate = startDate
 	}
 
-	// Rename input file
-	newInputName := fmt.Sprintf("DynonRaw %s to %s.csv", startDate, endDate)
-	os.Rename(inputFile, newInputName)
+	// Decide final output filename
+	var finalOutput string
+	if outputFile != "" {
+		finalOutput = outputFile
+	} else {
+		finalOutput = fmt.Sprintf("SavvyUpload %s to %s.csv", startDate, endDate)
+	}
 
-	// Update header
+	// Only auto-rename the input file when the user did not specify any filenames
+	if renameInput {
+		newInputName := fmt.Sprintf("DynonRaw %s to %s.csv", startDate, endDate)
+		if err := os.Rename(inputFile, newInputName); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to rename input file: %v\n", err)
+		} else {
+			fmt.Printf("Renamed input file to: %s\n", newInputName)
+		}
+	}
+
+	// Apply header remapping from config
 	for i, header := range records[0] {
 		if newHeader, ok := config[header]; ok {
 			records[0][i] = newHeader
 		}
 	}
 
-	outputFile := fmt.Sprintf("SavvyUpload %s to %s.csv", startDate, endDate)
-	writeCSV(outputFile, records)
-	fmt.Println("Created:", outputFile)
+	// Write output
+	writeCSV(finalOutput, records)
+
+	// Success report
+	fmt.Println("Success!")
+	fmt.Printf("  Input file : %s\n", inputFile)
+	fmt.Printf("  Output file: %s\n", finalOutput)
+	fmt.Printf("  Config     : %s\n", configFile)
+	if renameInput {
+		fmt.Println("  (Input file was automatically renamed using date range)")
+	} else {
+		fmt.Println("  (Explicit filenames provided - no auto-rename performed)")
+	}
+}
+
+func pause() {
+	fmt.Print("\nPress Enter to close this window...")
+	fmt.Scanln()
 }
 
 func extractDateRange(records [][]string) (string, string) {
@@ -87,11 +156,10 @@ func loadConfig(filename string) Config {
 	return c
 }
 
-func readCSV(filename string) [][]string {
+func readCSV(filename string) ([][]string, error) {
 	f, err := os.Open(filename)
 	if err != nil {
-		walk.MsgBox(nil, "File Error", err.Error(), walk.MsgBoxIconWarning)
-		os.Exit(1)
+		return nil, fmt.Errorf("error opening CSV: %w", err)
 	}
 	defer f.Close()
 
@@ -99,10 +167,9 @@ func readCSV(filename string) [][]string {
 	r.FieldsPerRecord = -1
 	records, err := r.ReadAll()
 	if err != nil {
-		walk.MsgBox(nil, "CSV Parse Error", err.Error(), walk.MsgBoxIconWarning)
-		os.Exit(1)
+		return nil, fmt.Errorf("error parsing CSV: %w", err)
 	}
-	return records
+	return records, nil
 }
 
 func writeCSV(filename string, records [][]string) {
@@ -111,4 +178,28 @@ func writeCSV(filename string, records [][]string) {
 	w := csv.NewWriter(f)
 	w.WriteAll(records)
 	w.Flush()
+}
+
+// findMissingHeaders returns config keys that do not exist in the CSV header.
+func findMissingHeaders(config Config, headers []string) []string {
+	headerSet := make(map[string]bool, len(headers))
+	for _, h := range headers {
+		headerSet[h] = true
+	}
+
+	var missing []string
+	for key := range config {
+		if !headerSet[key] {
+			missing = append(missing, key)
+		}
+	}
+	return missing
+}
+
+// promptContinue asks the user if they want to proceed despite a warning.
+func promptContinue(message string) bool {
+	fmt.Printf("\n%s\nContinue anyway? (y/N): ", message)
+	var response string
+	fmt.Scanln(&response)
+	return strings.ToLower(strings.TrimSpace(response)) == "y"
 }
