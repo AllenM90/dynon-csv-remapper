@@ -1,6 +1,6 @@
 # dynon-csv-remapper
 
-Simple Go + Fyne desktop tool to remap Dynon EMS CSV headers for Savvy Aviation upload.
+Simple Go + Walk desktop tool to remap Dynon EMS CSV headers for Savvy Aviation upload.
 
 ## Features (MVP)
 - Editable config.json for header mappings
