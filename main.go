@@ -37,16 +37,47 @@ func main() {
 		return
 	}
 
-	outputFile := "DynonSavvy" + time.Now().Format("060102") + ".csv"
+	startDate, endDate := extractDateRange(records)
+	if startDate == "" || endDate == "" {
+		startDate = time.Now().Format("20060102")
+		endDate = startDate
+	}
 
+	// Rename input file
+	newInputName := fmt.Sprintf("DynonRaw %s to %s.csv", startDate, endDate)
+	os.Rename(inputFile, newInputName)
+
+	// Update header
 	for i, header := range records[0] {
 		if newHeader, ok := config[header]; ok {
 			records[0][i] = newHeader
 		}
 	}
 
+	outputFile := fmt.Sprintf("SavvyUpload %s to %s.csv", startDate, endDate)
 	writeCSV(outputFile, records)
 	fmt.Println("Created:", outputFile)
+}
+
+func extractDateRange(records [][]string) (string, string) {
+	var start, end time.Time
+	for _, row := range records {
+		if len(row) > 3 && row[3] != "" {
+			t, err := time.Parse("2006-01-02 15:04:05", row[3])
+			if err == nil {
+				if start.IsZero() || t.Before(start) {
+					start = t
+				}
+				if end.IsZero() || t.After(end) {
+					end = t
+				}
+			}
+		}
+	}
+	if start.IsZero() || end.IsZero() {
+		return "", ""
+	}
+	return start.Format("20060102"), end.Format("20060102")
 }
 
 func loadConfig(filename string) Config {
@@ -65,7 +96,7 @@ func readCSV(filename string) [][]string {
 	defer f.Close()
 
 	r := csv.NewReader(f)
-	r.FieldsPerRecord = -1   // allow varying number of fields per row
+	r.FieldsPerRecord = -1
 	records, err := r.ReadAll()
 	if err != nil {
 		walk.MsgBox(nil, "CSV Parse Error", err.Error(), walk.MsgBoxIconWarning)
