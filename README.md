@@ -1,49 +1,83 @@
-# dynon-csv-remapper
+﻿# dynon-csv-remapper
 
-Simple Go + Walk desktop tool to remap Dynon EMS CSV headers for Savvy Aviation upload.
+A command-line tool to remap Dynon EMS CSV headers for Savvy Aviation uploads.
 
-## Features (MVP)
-- Editable config.json for header mappings
-- Native file pickers
-- One-click process
+## What It Does
 
-## Build & Run
+This tool prepares data files from Dynon engine monitors (including twin-engine setups) for use with Savvy Aviation's analysis tools. It remaps column headers using a simple `config.json` mapping and generates properly named output files based on the flight date range found in the GPS data.
+
+## Key Features
+
+- Latest release incorporate full command-line support
+- Optional explicit input and output file paths
+- Support for custom config files
+- Soft validation — if some columns in your config are missing from the CSV, it will warn you and let you continue anyway
+- Single executable with no external dependencies
+
+## Usage
+
+### Simple / Original Behavior (no arguments)
+
+Place `dynon2savvy.exe`, `config.json`, and your `DynonRaw.csv` in the same folder and double-click the exe. The tool will:
+
+- Detect the date range from your data
+- Rename the input file (e.g., `DynonRaw 20260501 to 20260513.csv`)
+- Create a `SavvyUpload ... .csv` file with remapped headers
+
+### Command Line Options
+
 ```bash
-go mod tidy
-go run main.go
+# Basic usage (default input + smart output naming)
+dynon2savvy.exe
+
+# Explicit input file only (smart output name, no auto-rename)
+dynon2savvy.exe "C:\path\to\myfile.csv"
+
+# Explicit input and output
+dynon2savvy.exe "input.csv" "Savvy test upload.csv"
+
+# With a custom config file
+dynon2savvy.exe "input.csv" "output.csv" "my-config.json"
 ```
 
-## Next
-Full CSV read/write + header replacement logic.
+**Note on renaming:** The input file is only auto-renamed when you run the tool with no arguments. When you provide explicit filenames, the original files are left untouched.
 
-## Dynon2Savvy
+## Configuration
 
-**What it does**  
-This tool prepares data files from twin engine Dynon EMS installations for use with Savvy Aviation's analysis tools. It automatically remaps column headers using your `config.json` file and creates properly named output files based on the flight date range found in the GPS data.
+Edit `config.json` to map your Dynon column names to the desired Savvy Aviation headers. Example:
 
-**How to use (User Perspective)**
+```json
+{
+  "Fuel Flow 1 (gal/hr)": "L-FF",
+  "EGT 1 (deg C)": "L-EGT1",
+  ...
+}
+```
 
-1. Place these three files in the same folder:
-   - `Dynon2Savvy.exe`
-   - `config.json` (edit this with your header mappings)
-   - `DynonRaw.csv` (your exported Dynon file)
+One large config file can be used across multiple different data sources — any columns that don't exist in a particular CSV will simply be skipped (with a warning).
 
-2. Double-click `Dynon2Savvy.exe`.
+## Building from Source
 
-3. The program will:
-   - Read your header mappings
-   - Convert the file
-   - Rename the original input to `DynonRaw YYYYMMDD to YYYYMMDD.csv`
-   - Create `SavvyUpload YYYYMMDD to YYYYMMDD.csv`
+```bash
+git clone https://github.com/AllenM90/dynon-csv-remapper.git
+cd dynon-csv-remapper
+go build -o dynon2savvy.exe .
+```
 
-**Requirements**
+## Requirements
+
 - Windows 10 or 11
-- `config.json` with your Dynon → Savvy header mappings
-- `DynonRaw.csv` in the same folder as the .exe
+- A `config.json` file with your header mappings
 
-**Tools & Libraries**
-- Go 1.22+
-- `github.com/lxn/walk` (lightweight use for error popups only)
-- Standard Go libraries for CSV and JSON processing
+## Releases
 
-*Summary written by Grok (xAI) — 2026-05-25*
+Pre-built Windows executables are available on the [Releases page](https://github.com/AllenM90/dynon-csv-remapper/releases).
+
+## Future Plans
+
+A Python-based frontend is currently in development. It will offer a more user-friendly interface while continuing to use this Go binary as the high-performance core.
+
+## Version History
+
+- **v1.1.0** (current) — Full CLI support with 0–3 arguments, soft header validation, removed Walk dependency.
+- **v1.0.0** — Original simple double-click tool.
