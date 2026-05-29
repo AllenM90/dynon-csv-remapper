@@ -1,0 +1,1 @@
+the full gui.py content from the read (the long one with all the _on_run, _debug_log, etc.)
