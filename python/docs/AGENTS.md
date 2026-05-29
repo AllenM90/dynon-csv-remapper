@@ -1,0 +1,1 @@
+the full AGENTS.md content

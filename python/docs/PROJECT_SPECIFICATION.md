@@ -1,0 +1,1 @@
+the full PROJECT_SPECIFICATION.md content from earlier read
