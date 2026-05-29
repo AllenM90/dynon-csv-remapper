@@ -1,0 +1,1 @@
+the full settings.py content
