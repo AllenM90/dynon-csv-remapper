@@ -7,12 +7,15 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"golang.org/x/term"
 )
 
 type Config map[string]string
 
 func main() {
-	// Always pause at the end so the window stays open when double-clicked
+	// Pause only when running interactively (double-click or real console).
+	// Skip the pause when launched from another program (e.g. Python GUI).
 	defer pause()
 
 	args := os.Args[1:]
@@ -67,13 +70,19 @@ func main() {
 
 	// Soft header validation: warn if config references columns not present in the CSV.
 	// Only columns present in both will be remapped (allows one large config for multiple data sources).
+	// We always continue (no early return). The interactive prompt is gated exactly like the
+	// final pause() so non-interactive launches (Python GUI with capture_output) never block.
 	if missing := findMissingHeaders(config, records[0]); len(missing) > 0 {
 		msg := "The following columns from the config were not found in the CSV:\n"
 		for _, m := range missing {
 			msg += "  - " + m + "\n"
 		}
-		if !promptContinue(msg) {
-			return
+		fmt.Fprintf(os.Stderr, "Warning: ignored columns from config:\n%s", msg)
+
+		if isInteractive() {
+			if !promptContinue("Continue anyway?") {
+				return
+			}
 		}
 	}
 
@@ -124,8 +133,18 @@ func main() {
 }
 
 func pause() {
+	if !isInteractive() {
+		return
+	}
 	fmt.Print("\nPress Enter to close this window...")
 	fmt.Scanln()
+}
+
+// isInteractive returns true if stdin and stdout are connected to a real terminal.
+// This lets us skip the pause when the binary is launched from another program
+// (e.g. Python with capture_output=True), while still pausing for double-click users.
+func isInteractive() bool {
+	return term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd()))
 }
 
 func extractDateRange(records [][]string) (string, string) {
