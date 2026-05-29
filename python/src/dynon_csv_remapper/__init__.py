@@ -1,1 +1,3 @@
-the full content from previous read
+"""Dynon CSV Remapper - Python Frontend"""
+
+__version__ = "0.1.0"
