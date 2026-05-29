@@ -1,1 +1,2 @@
-the requirements-dev.txt content
+# Development dependencies
+# Add tools here as we go (e.g. pytest, ruff, mypy, typer, etc.)
