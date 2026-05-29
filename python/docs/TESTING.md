@@ -1,0 +1,1 @@
+the full TESTING.md content
