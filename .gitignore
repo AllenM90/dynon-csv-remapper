@@ -30,3 +30,8 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Application state (contains user-specific paths and last-used folders)
+# The app creates this file automatically on first run with safe defaults.
+d2sAppState.json
+**/d2sAppState.json
