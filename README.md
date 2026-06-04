@@ -1,4 +1,4 @@
-﻿# dynon-csv-remapper
+# dynon-csv-remapper
 
 A command-line tool to remap Dynon EMS CSV headers for Savvy Aviation uploads.
 
@@ -73,11 +73,18 @@ go build -o dynon2savvy.exe .
 
 Pre-built Windows executables are available on the [Releases page](https://github.com/AllenM90/dynon-csv-remapper/releases).
 
-## Future Plans
+## Python GUI Frontend (v2.0+)
 
-A Python-based frontend is currently in development. It will offer a more user-friendly interface while continuing to use this Go binary as the high-performance core.
+A Python-based GUI frontend is now available as the primary interface (Release 2.0). It offers a mouse-friendly experience while using this Go binary as the high-performance core.
+
+- Download the packaged version from the latest release.
+- Unzip and run Dynon2Savvy.exe (no Python installation required).
+- Features auto-detection of recent logs, smart output naming, persistent state, and support for custom mappings.
+
+See the `python/` directory in the source for the GUI code and packaging scripts.
 
 ## Version History
 
-- **v1.1.0** (current) — Full CLI support with 0–3 arguments, soft header validation, removed Walk dependency.
+- **v2.0.0** - Python GUI frontend (--onedir package), smart pause in Go binary, path normalization.
+- **v1.1.0** (current for CLI) — Full CLI support with 0–3 arguments, soft header validation, removed Walk dependency.
 - **v1.0.0** — Original simple double-click tool.
